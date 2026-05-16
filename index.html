@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle Tank Arena 2D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            background:
+                radial-gradient(ellipse 85% 60% at 50% -5%, rgba(200, 90, 40, 0.22) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 45% at 0% 90%, rgba(60, 100, 50, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse 45% 40% at 100% 70%, rgba(180, 50, 40, 0.15) 0%, transparent 45%),
+                linear-gradient(165deg, #0c0e0a 0%, #1a1c14 35%, #121410 100%);
+            color: #b8b4a8;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .arena-grid {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(120, 140, 80, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(120, 140, 80, 0.05) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, black 10%, transparent 72%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .blast-glow {
+            position: fixed;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(220, 100, 40, 0.12) 0%, transparent 68%);
+            top: 8%;
+            right: -10%;
+            animation: drift 14s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .blast-glow:nth-child(2) {
+            right: auto;
+            left: -12%;
+            top: 55%;
+            width: 260px;
+            height: 260px;
+            background: radial-gradient(circle, rgba(80, 120, 60, 0.14) 0%, transparent 65%);
+            animation-delay: -5s;
+            animation-duration: 18s;
+        }
+
+        @keyframes drift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-8px, 10px); }
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background: linear-gradient(158deg, rgba(28, 30, 22, 0.96) 0%, rgba(14, 16, 10, 0.98) 100%);
+            border: 1px solid rgba(140, 150, 90, 0.3);
+            border-radius: 20px;
+            padding: 44px 40px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            box-shadow:
+                0 0 0 1px rgba(200, 120, 60, 0.06) inset,
+                0 28px 64px rgba(0, 0, 0, 0.6),
+                0 0 60px rgba(180, 80, 40, 0.08);
+        }
+
+        .icon-wrap {
+            width: 112px;
+            height: 112px;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            background: linear-gradient(145deg, #2a2e20 0%, #161810 55%, #0c0e08 100%);
+            box-shadow:
+                0 12px 32px rgba(0, 0, 0, 0.55),
+                0 0 20px rgba(200, 90, 50, 0.12),
+                inset 0 1px 0 rgba(220, 200, 160, 0.08);
+            border: 1px solid rgba(160, 140, 80, 0.35);
+        }
+
+        .icon-wrap svg {
+            width: 76px;
+            height: 76px;
+        }
+
+        h1 {
+            font-size: 2.05rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 8px;
+            color: #f0ece0;
+        }
+
+        h1 span.accent {
+            background: linear-gradient(90deg, #e87840, #c8b060);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: 0.96rem;
+            font-weight: 600;
+            color: #a8a070;
+            margin-bottom: 26px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 26px;
+        }
+
+        .chip {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 8px 14px;
+            border-radius: 6px;
+            background: rgba(60, 70, 40, 0.45);
+            color: #c8c4a8;
+            border: 1px solid rgba(140, 150, 90, 0.35);
+        }
+
+        .chip.hot {
+            background: rgba(180, 70, 40, 0.3);
+            color: #ffd0a8;
+            border-color: rgba(220, 120, 60, 0.45);
+        }
+
+        .lead {
+            text-align: left;
+            color: #9c9888;
+            line-height: 1.75;
+            font-size: 1.04rem;
+            margin-bottom: 26px;
+        }
+
+        .lead strong {
+            color: #fff;
+        }
+
+        .how-to {
+            text-align: left;
+            margin-bottom: 26px;
+            padding: 20px 22px;
+            border-radius: 12px;
+            background: rgba(10, 12, 8, 0.9);
+            border: 1px solid rgba(100, 110, 60, 0.28);
+            border-left: 4px solid #e87840;
+        }
+
+        .how-to h2 {
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #e87840;
+            margin-bottom: 14px;
+        }
+
+        .how-to ol {
+            margin: 0;
+            padding-left: 20px;
+            color: #8c8878;
+            font-size: 0.92rem;
+            line-height: 1.65;
+        }
+
+        .how-to li {
+            margin-bottom: 8px;
+        }
+
+        .how-to li strong {
+            color: #e8e4d8;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            text-align: left;
+            margin-bottom: 26px;
+        }
+
+        .feature-card {
+            background: rgba(8, 10, 6, 0.92);
+            border: 1px solid rgba(80, 90, 50, 0.25);
+            border-radius: 12px;
+            padding: 16px;
+            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(232, 120, 64, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .feature-card h3 {
+            font-size: 0.84rem;
+            color: #e87840;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .feature-card p {
+            font-size: 0.87rem;
+            color: #7a7868;
+            line-height: 1.55;
+        }
+
+        .cta {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 16px 36px;
+            font-size: 1.02rem;
+            font-weight: 700;
+            color: #1a1408;
+            text-decoration: none;
+            border-radius: 10px;
+            background: linear-gradient(180deg, #f0a060 0%, #c86030 100%);
+            box-shadow: 0 8px 28px rgba(200, 90, 40, 0.35);
+            border: 2px solid rgba(255, 200, 140, 0.25);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 36px rgba(220, 100, 50, 0.4);
+        }
+
+        .foot {
+            margin-top: 26px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(80, 90, 50, 0.28);
+            font-size: 0.88rem;
+            color: #5a5848;
+        }
+
+        .foot a {
+            color: #c8a060;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .foot a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 560px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                padding: 32px 22px;
+            }
+            h1 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="arena-grid" aria-hidden="true"></div>
+    <div class="blast-glow" aria-hidden="true"></div>
+    <div class="blast-glow" aria-hidden="true"></div>
+
+    <div class="container">
+        <div class="icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="14" y="28" width="36" height="22" rx="4" fill="#3a3e28" stroke="#8a9070" stroke-width="1.2"/>
+                <rect x="8" y="34" width="10" height="8" rx="2" fill="#2a2e20" stroke="#6a7058" stroke-width="1"/>
+                <rect x="46" y="34" width="10" height="8" rx="2" fill="#2a2e20" stroke="#6a7058" stroke-width="1"/>
+                <rect x="38" y="24" width="18" height="8" rx="2" fill="#4a4e38" stroke="#a09060" stroke-width="1.2"/>
+                <circle cx="52" cy="28" r="4" fill="#e87840" opacity="0.9"/>
+                <rect x="20" y="22" width="12" height="6" rx="1" fill="#c84030" opacity="0.85"/>
+                <path d="M22 50 L42 50" stroke="#5a5848" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </div>
+
+        <h1>Battle Tank Arena <span class="accent">2D</span></h1>
+        <p class="tagline">Fast top-down tank action</p>
+
+        <div class="chips">
+            <span class="chip hot">Free</span>
+            <span class="chip">iOS 15+</span>
+            <span class="chip">Simulation</span>
+            <span class="chip hot">Ages 9+</span>
+        </div>
+
+        <p class="lead">
+            <strong>Drive into fast 2D arena battles where precision, timing, and strategy decide every fight.</strong> Battle Tank Arena 2D is a tactical arcade tank shooter: dodge enemy fire, collect upgrades, and survive dynamic arenas filled with obstacles, power-ups, and intense projectile combat across grassland, desert, snow, and volcanic battlefields.
+        </p>
+
+        <section class="how-to">
+            <h2>Combat basics</h2>
+            <ol>
+                <li><strong>Move &amp; grapple</strong> — Use your grappling hook to zip across the arena, dodge shots, and pull enemies into danger.</li>
+                <li><strong>Deflect with timing</strong> — Activate your shield at the right moment to bounce projectiles back at attackers.</li>
+                <li><strong>Power up &amp; ram</strong> — Collect power orbs for a red strength shield, then slam enemy tanks with physics-based knockback.</li>
+                <li><strong>Adapt your loadout</strong> — Switch between fast movement mode and heavy tank mode to match each arena challenge.</li>
+            </ol>
+        </section>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>Grappling hook combat</h3>
+                <p>Physics-based movement lets you reposition quickly and create new tactical openings mid-battle.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Projectile deflection</h3>
+                <p>Master timing-based shields to turn enemy fire against them when the moment is right.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Strength shield ram</h3>
+                <p>Red power orbs fuel impact attacks—charge in and deal heavy knockback damage.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Dynamic arenas</h3>
+                <p>Changing layouts, obstacles, and themes keep every match feeling fresh and replayable.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Four environments</h3>
+                <p>Fight across grassland, desert, snow, and volcanic battlefields with distinct visual moods.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Dual combat modes</h3>
+                <p>Choose speed for agility or heavy firepower when the arena demands a different approach.</p>
+            </div>
+        </div>
+
+        <a href="https://apps.apple.com/us/app/battle-tank-arena-2d/id6756968388?uo=4" class="cta" target="_blank" rel="noopener noreferrer">Download on the App Store</a>
+
+        <div class="foot">
+            <a href="privacy.html">Privacy overview</a>
+        </div>
+    </div>
+</body>
+
+</html>
